@@ -2,13 +2,18 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="192dp"
-    android:padding="16dp"
+    android:gravity="bottom"
     android:orientation="vertical"
-    android:gravity="bottom">
+    android:padding="16dp"
+    android:background="@drawable/gradient_drawer_header"
+    android:outlineAmbientShadowColor="@color/colorPrimaryDark"
+    android:outlineProvider="paddedBounds"
+    android:theme="@style/AppTheme">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="WroGuide Menu"/>
+        android:textColor="@color/white"
+        android:text="WroGuide Menu" />
 
 </LinearLayout>

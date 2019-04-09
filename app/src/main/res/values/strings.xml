@@ -3,4 +3,6 @@
     <string name="title_activity_maps">Map</string>
     <string name="food">Food</string>
     <string name="museums">Museums</string>
+    <string name="architecture">Architecture</string>
+    <string name="shopping">Shopping</string>
 </resources>

@@ -2,10 +2,20 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_camera"
+            android:id="@+id/nav_food"
+            android:icon="@drawable/ic_local_dining_black_24dp"
             android:title="@string/food" />
         <item
-            android:id="@+id/nav_gallery"
-            android:title="@string/museums" />
+            android:id="@+id/nav_museums"
+            android:icon="@drawable/ic_local_activity_black_24dp"
+            android:title="@string/museums"/>
+        <item
+            android:id="@+id/nav_architecture"
+            android:icon="@drawable/ic_store_mall_directory_black_24dp"
+            android:title="@string/architecture" />
+        <item
+            android:id="@+id/nav_shopping"
+            android:icon="@drawable/ic_local_grocery_store_black_24dp"
+            android:title="@string/shopping" />
     </group>
 </menu>
