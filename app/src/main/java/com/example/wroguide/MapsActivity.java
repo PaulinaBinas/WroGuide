@@ -1,12 +1,16 @@
 package com.example.wroguide;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -14,6 +18,16 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseError;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.Map;
+import java.util.ArrayList;
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -21,8 +35,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private DrawerLayout drawerLayout;
 
+    private static final String TAG = "MainActivity";
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+
+        final ArrayList<String> categories = new ArrayList<String>();
+        final ArrayList<ArrayList<Location>> listOfLocations = new ArrayList<ArrayList<Location>>();
+
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("category");
+
+
+
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
@@ -33,15 +61,56 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         Toolbar toolbar = findViewById(R.id.my_toolbar);
         setSupportActionBar(toolbar);
+
         ActionBar actionbar = getSupportActionBar();
         actionbar.setDisplayHomeAsUpEnabled(true);
         actionbar.setHomeAsUpIndicator(R.drawable.ic_menu);
         actionbar.setTitle("WroGuide");
 
         drawerLayout = findViewById(R.id.drawer_layout);
+
+
+        myRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                // This method is called once with the initial value and again
+                // whenever data at this location is updated.
+
+                for(DataSnapshot categorySnapshot : dataSnapshot.getChildren()){
+                    categories.add(categorySnapshot.getKey());
+
+
+                    listOfLocations.add(new ArrayList<Location>());
+                    //System.out.println("Wielkosc: " + listOfLocations.size() + categories.size());
+                    for(DataSnapshot locationSnapshot: categorySnapshot.getChildren()) {
+                        //System.out.println(locationSnapshot.child("name").getValue());
+
+                        String name = locationSnapshot.child("name").getValue().toString();
+                        String category = categories.get(categories.size()-1);
+                        Long longitude = (Long)locationSnapshot.child("longitude").getValue();
+                        Long latitude = (Long)locationSnapshot.child("latitude").getValue();
+
+
+
+                        listOfLocations.get(categories.size()-1).add(new Location(name, category, latitude, longitude));
+                        System.out.println(name + category + longitude + latitude);
+
+
+
+                    }
+
+                }
+
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
     }
-
-
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -61,13 +130,26 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(wroclawMainSquare, 17));
     }
 
-    @Override
+
+
+
+   @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+
         switch (item.getItemId()) {
             case android.R.id.home:
                 drawerLayout.openDrawer(GravityCompat.START);
+
                 return true;
         }
+
+
+
+
         return super.onOptionsItemSelected(item);
     }
+
+
+
+
 }
