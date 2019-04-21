@@ -86,13 +86,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                         String name = locationSnapshot.child("name").getValue().toString();
                         String category = categories.get(categories.size()-1);
-                        Long longitude = (Long)locationSnapshot.child("longitude").getValue();
-                        Long latitude = (Long)locationSnapshot.child("latitude").getValue();
+                        String latitudeTemp = locationSnapshot.child("latitude").getValue().toString();
+                        String longitudeTemp = locationSnapshot.child("longitude").getValue().toString();
 
-
+                        double latitude = Double.parseDouble(latitudeTemp);
+                        double longitude = Double.parseDouble(longitudeTemp);
 
                         listOfLocations.get(categories.size()-1).add(new Location(name, category, latitude, longitude));
-                        System.out.println(name + category + longitude + latitude);
+                        //System.out.println(name + category + longitude + latitude);
 
 
 
@@ -118,12 +119,17 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     case R.id.nav_food:
                         //Do some thing here
                         // add navigation drawer item onclick method here
-                        Toast.makeText(MapsActivity.this, "Clicked Food button!",
-                                Toast.LENGTH_LONG).show();
+
+                        drawMarkers(listOfLocations, categories, "food");
+
                         drawerLayout.closeDrawers();
+                        break;
+
                     case R.id.nav_museums:
                         //Do some thing here
                         // add navigation drawer item onclick method here
+
+                        drawMarkers(listOfLocations, categories, "museum");
                         Toast.makeText(MapsActivity.this, "Clicked Art button!",
                                 Toast.LENGTH_LONG).show();
                         drawerLayout.closeDrawers();
@@ -131,6 +137,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     case R.id.nav_architecture:
                         //Do some thing here
                         // add navigation drawer item onclick method here
+                        drawMarkers(listOfLocations,categories, "architecture");
                         Toast.makeText(MapsActivity.this, "Clicked Architecture button!",
                                 Toast.LENGTH_LONG).show();
                         drawerLayout.closeDrawers();
@@ -138,6 +145,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     case R.id.nav_shopping:
                         //Do some thing here
                         // add navigation drawer item onclick method here
+
+                        drawMarkers(listOfLocations, categories, "shopping");
                         Toast.makeText(MapsActivity.this, "Clicked Shopping button!",
                                 Toast.LENGTH_LONG).show();
                         drawerLayout.closeDrawers();
@@ -155,6 +164,20 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
 
     }
+
+    private void drawMarkers(ArrayList<ArrayList<Location>> locations, ArrayList<String> categories, String chosenCategory){
+
+        mMap.clear();
+        for (int i = 0; i < categories.size(); i++) {
+            if (categories.get(i).equals(chosenCategory)) {
+                for (int j = 0; j < locations.get(i).size(); j++) {
+                    System.out.println(j);
+                    mMap.addMarker(new MarkerOptions().position(new LatLng(locations.get(i).get(j).getLatitude(), locations.get(i).get(j).getLongitude())).title(locations.get(i).get(j).getName()));
+
+                }
+            }
+        }
+    }
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -171,7 +194,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         // Add a marker in Sydney and move the camera
         LatLng wroclawMainSquare = new LatLng(51.1098994,17.0321699);
         mMap.addMarker(new MarkerOptions().position(wroclawMainSquare).title("Marker in Main Square"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(wroclawMainSquare, 17));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(wroclawMainSquare, 15));
     }
 
 
