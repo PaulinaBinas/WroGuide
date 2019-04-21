@@ -1,16 +1,14 @@
 package com.example.wroguide;
 
-import android.content.Intent;
 import android.os.Bundle;
+import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.Button;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -19,14 +17,12 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.FirebaseApp;
-import com.google.firebase.FirebaseError;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import java.util.Map;
 import java.util.ArrayList;
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
@@ -34,6 +30,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private GoogleMap mMap;
 
     private DrawerLayout drawerLayout;
+
+    private NavigationView navigation;
 
     private static final String TAG = "MainActivity";
 
@@ -46,6 +44,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         final ArrayList<String> categories = new ArrayList<String>();
         final ArrayList<ArrayList<Location>> listOfLocations = new ArrayList<ArrayList<Location>>();
 
+        FirebaseApp.initializeApp(this);
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference myRef = database.getReference("category");
 
@@ -110,6 +109,51 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
+        navigation = (NavigationView) findViewById(R.id.nav_view);
+        navigation.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(MenuItem menuItem) {
+                int id = menuItem.getItemId();
+                switch (id) {
+                    case R.id.nav_food:
+                        //Do some thing here
+                        // add navigation drawer item onclick method here
+                        Toast.makeText(MapsActivity.this, "Clicked Food button!",
+                                Toast.LENGTH_LONG).show();
+                        drawerLayout.closeDrawers();
+                    case R.id.nav_museums:
+                        //Do some thing here
+                        // add navigation drawer item onclick method here
+                        Toast.makeText(MapsActivity.this, "Clicked Art button!",
+                                Toast.LENGTH_LONG).show();
+                        drawerLayout.closeDrawers();
+                        break;
+                    case R.id.nav_architecture:
+                        //Do some thing here
+                        // add navigation drawer item onclick method here
+                        Toast.makeText(MapsActivity.this, "Clicked Architecture button!",
+                                Toast.LENGTH_LONG).show();
+                        drawerLayout.closeDrawers();
+                        break;
+                    case R.id.nav_shopping:
+                        //Do some thing here
+                        // add navigation drawer item onclick method here
+                        Toast.makeText(MapsActivity.this, "Clicked Shopping button!",
+                                Toast.LENGTH_LONG).show();
+                        drawerLayout.closeDrawers();
+                        break;
+                    case R.id.nav_history:
+                        //Do some thing here
+                        // add navigation drawer item onclick method here
+                        Toast.makeText(MapsActivity.this, "Clicked Historical Objects button!",
+                                Toast.LENGTH_LONG).show();
+                        drawerLayout.closeDrawers();
+                        break;
+                }
+                return false;
+            }
+        });
+
     }
     /**
      * Manipulates the map once available.
@@ -139,13 +183,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         switch (item.getItemId()) {
             case android.R.id.home:
                 drawerLayout.openDrawer(GravityCompat.START);
-
                 return true;
         }
-
-
-
-
         return super.onOptionsItemSelected(item);
     }
 
