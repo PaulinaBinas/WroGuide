@@ -35,14 +35,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private static final String TAG = "MainActivity";
 
+    private final ArrayList<Location> listOfLocations = new ArrayList<Location>();
+
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
-
-        final ArrayList<String> categories = new ArrayList<String>();
-        final ArrayList<ArrayList<Location>> listOfLocations = new ArrayList<ArrayList<Location>>();
 
         FirebaseApp.initializeApp(this);
         FirebaseDatabase database = FirebaseDatabase.getInstance();
@@ -75,34 +73,44 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 // This method is called once with the initial value and again
                 // whenever data at this location is updated.
 
-                for(DataSnapshot categorySnapshot : dataSnapshot.getChildren()){
-                    categories.add(categorySnapshot.getKey());
-
-
-                    listOfLocations.add(new ArrayList<Location>());
-                    //System.out.println("Wielkosc: " + listOfLocations.size() + categories.size());
-                    for(DataSnapshot locationSnapshot: categorySnapshot.getChildren()) {
-                        //System.out.println(locationSnapshot.child("name").getValue());
+                for (DataSnapshot categorySnapshot : dataSnapshot.getChildren()) {
+                    Category category;
+                    String c = categorySnapshot.getKey();
+                    switch (c) {
+                        case "food":
+                            category = Category.FOOD;
+                            break;
+                        case "shopping":
+                            category = Category.SHOPPING;
+                            break;
+                        case "museum":
+                            category = Category.ART;
+                            break;
+                        case "historical":
+                            category = Category.HISTORICAL;
+                            break;
+                        case "architecture":
+                            category = Category.ARCHITECTURAL;
+                            break;
+                        default:
+                            category = Category.FOOD;
+                    }
+                    for (DataSnapshot locationSnapshot : categorySnapshot.getChildren()) {
 
                         String name = locationSnapshot.child("name").getValue().toString();
-                        String category = categories.get(categories.size()-1);
                         String latitudeTemp = locationSnapshot.child("latitude").getValue().toString();
                         String longitudeTemp = locationSnapshot.child("longitude").getValue().toString();
 
                         double latitude = Double.parseDouble(latitudeTemp);
                         double longitude = Double.parseDouble(longitudeTemp);
 
-                        listOfLocations.get(categories.size()-1).add(new Location(name, category, latitude, longitude));
-                        //System.out.println(name + category + longitude + latitude);
-
-
-
+                        listOfLocations.add(new Location(name, category, latitude, longitude));
+                        System.out.println("NAME: " + name);
                     }
 
                 }
-
-
             }
+
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
@@ -116,12 +124,20 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             public boolean onNavigationItemSelected(MenuItem menuItem) {
                 int id = menuItem.getItemId();
                 switch (id) {
+                    case R.id.nav_all:
+                        drawAllMarkers(listOfLocations);
+                        Toast.makeText(MapsActivity.this, "Clicked All Locations button!",
+                                Toast.LENGTH_LONG).show();
+                        drawerLayout.closeDrawers();
+                        break;
+
                     case R.id.nav_food:
                         //Do some thing here
                         // add navigation drawer item onclick method here
 
-                        drawMarkers(listOfLocations, categories, "food");
-
+                        drawMarkers(listOfLocations, Category.FOOD);
+                        Toast.makeText(MapsActivity.this, "Clicked Food button!",
+                                Toast.LENGTH_LONG).show();
                         drawerLayout.closeDrawers();
                         break;
 
@@ -129,7 +145,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         //Do some thing here
                         // add navigation drawer item onclick method here
 
-                        drawMarkers(listOfLocations, categories, "museum");
+                        drawMarkers(listOfLocations, Category.ART);
                         Toast.makeText(MapsActivity.this, "Clicked Art button!",
                                 Toast.LENGTH_LONG).show();
                         drawerLayout.closeDrawers();
@@ -137,7 +153,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     case R.id.nav_architecture:
                         //Do some thing here
                         // add navigation drawer item onclick method here
-                        drawMarkers(listOfLocations,categories, "architecture");
+                        drawMarkers(listOfLocations, Category.ARCHITECTURAL);
                         Toast.makeText(MapsActivity.this, "Clicked Architecture button!",
                                 Toast.LENGTH_LONG).show();
                         drawerLayout.closeDrawers();
@@ -146,7 +162,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         //Do some thing here
                         // add navigation drawer item onclick method here
 
-                        drawMarkers(listOfLocations, categories, "shopping");
+                        drawMarkers(listOfLocations, Category.SHOPPING);
                         Toast.makeText(MapsActivity.this, "Clicked Shopping button!",
                                 Toast.LENGTH_LONG).show();
                         drawerLayout.closeDrawers();
@@ -154,6 +170,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     case R.id.nav_history:
                         //Do some thing here
                         // add navigation drawer item onclick method here
+                        drawMarkers(listOfLocations, Category.HISTORICAL);
                         Toast.makeText(MapsActivity.this, "Clicked Historical Objects button!",
                                 Toast.LENGTH_LONG).show();
                         drawerLayout.closeDrawers();
@@ -165,17 +182,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
-    private void drawMarkers(ArrayList<ArrayList<Location>> locations, ArrayList<String> categories, String chosenCategory){
+    private void drawMarkers(ArrayList<Location> locations, Category chosenCategory){
 
         mMap.clear();
-        for (int i = 0; i < categories.size(); i++) {
-            if (categories.get(i).equals(chosenCategory)) {
-                for (int j = 0; j < locations.get(i).size(); j++) {
-                    System.out.println(j);
-                    mMap.addMarker(new MarkerOptions().position(new LatLng(locations.get(i).get(j).getLatitude(), locations.get(i).get(j).getLongitude())).title(locations.get(i).get(j).getName()));
-
-                }
+        for (Location l : locations) {
+            if(l.getCategory().equals(chosenCategory)) {
+                mMap.addMarker(new MarkerOptions().position(
+                        new LatLng(l.getLatitude(), l.getLongitude())).title(l.getName()));
             }
+        }
+    }
+
+    private void drawAllMarkers(ArrayList<Location> locations) {
+        mMap.clear();
+        for (Location l : locations) {
+            mMap.addMarker(new MarkerOptions().position(
+                    new LatLng(l.getLatitude(), l.getLongitude())).title(l.getName()));
         }
     }
     /**

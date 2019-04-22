@@ -6,4 +6,5 @@
     <string name="architecture">Architecture</string>
     <string name="shopping">Shopping</string>
     <string name="history">Historical Objects</string>
+    <string name="all">All Locations</string>
 </resources>
