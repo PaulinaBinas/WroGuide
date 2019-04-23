@@ -6,12 +6,14 @@ public class Location {
     private Category category;
     private double longitude;
     private double latitude;
+    private String description;
 
-    public Location(String name, Category category, double latitude, double longitude) {
+    public Location(String name, Category category, double latitude, double longitude, String description) {
         this.name = name;
         this.category = category;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.description = description;
     }
 
     public String getName() {
@@ -29,5 +31,7 @@ public class Location {
     public double getLongitude(){
         return longitude;
     }
+
+    public String getDescription() { return description; }
 
 }

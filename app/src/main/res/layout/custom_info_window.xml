@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/custom_info_window"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:layout_margin="10sp"
+    android:background="@color/colorPrimary"
+    android:clickable="false"
+    android:gravity="center_horizontal"
+    android:minWidth="50sp"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_margin="15sp"
+        android:layout_marginLeft="5sp"
+        android:layout_marginRight="5sp"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:textColor="@color/common_google_signin_btn_text_dark_default"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/snippet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5sp"
+        android:layout_marginRight="5sp"
+        android:background="@color/seeThroughWhite"
+        android:ellipsize="end"
+        android:padding="5sp"
+        android:singleLine="false"
+        android:textColor="@color/primaryTextColor"
+        android:textSize="14sp" />
+
+    <Button
+        android:id="@+id/button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="15sp"
+        android:layout_marginLeft="5sp"
+        android:layout_marginRight="5sp"
+        android:drawableRight="@android:drawable/ic_menu_directions"
+        android:minWidth="@android:dimen/thumbnail_width"
+        android:text="Directions" />
+
+</LinearLayout>

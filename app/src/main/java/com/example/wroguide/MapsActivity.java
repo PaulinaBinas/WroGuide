@@ -1,6 +1,7 @@
 package com.example.wroguide;
 
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
@@ -11,8 +12,16 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.CheckBox;
+import android.widget.ImageView;
+import android.widget.RadioGroup;
+import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -23,6 +32,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -57,6 +67,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
 
+    private Marker mLastSelectedMarker;
+
+    private TextView mTopText;
+
+    private SeekBar mRotationBar;
+
+    private CheckBox mFlatBox;
+
+    private RadioGroup mOptions;
 
 
     @Override
@@ -119,12 +138,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         String name = locationSnapshot.child("name").getValue().toString();
                         String latitudeTemp = locationSnapshot.child("latitude").getValue().toString();
                         String longitudeTemp = locationSnapshot.child("longitude").getValue().toString();
+                        String description = locationSnapshot.child("description").getValue().toString();
 
                         double latitude = Double.parseDouble(latitudeTemp);
                         double longitude = Double.parseDouble(longitudeTemp);
 
-                        listOfLocations.add(new Location(name, category, latitude, longitude));
-                        System.out.println("NAME: " + name);
+                        listOfLocations.add(new Location(name, category, latitude, longitude, description));
                     }
 
                 }
@@ -207,7 +226,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         for (Location l : locations) {
             if(l.getCategory().equals(chosenCategory)) {
                 mMap.addMarker(new MarkerOptions().position(
-                        new LatLng(l.getLatitude(), l.getLongitude())).title(l.getName()));
+                        new LatLng(l.getLatitude(), l.getLongitude())).title(l.getName()).snippet(l.getDescription()));
             }
         }
     }
@@ -216,7 +235,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.clear();
         for (Location l : locations) {
             mMap.addMarker(new MarkerOptions().position(
-                    new LatLng(l.getLatitude(), l.getLongitude())).title(l.getName()));
+                    new LatLng(l.getLatitude(), l.getLongitude())).title(l.getName()).snippet(l.getDescription()));
         }
     }
 
@@ -294,6 +313,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         getLocationPermission();
         updateLocationUI();
         getDeviceLocation();
+        mMap.setInfoWindowAdapter(new CustomInfoWindowAdapter());
     }
 
    @Override
@@ -322,5 +342,50 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
         updateLocationUI();
+    }
+
+    /** Demonstrates customizing the info window and/or its contents. */
+    class CustomInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
+
+        // These are both viewgroups containing an ImageView with id "badge" and two TextViews with id
+        // "title" and "snippet".
+        private final View mWindow;
+
+        CustomInfoWindowAdapter() {
+            mWindow = getLayoutInflater().inflate(R.layout.custom_info_window, null);
+        }
+
+        @Override
+        public View getInfoWindow(Marker marker) {
+            render(marker, mWindow);
+            mWindow.setClickable(false);
+            return mWindow;
+        }
+
+        @Override
+        public View getInfoContents(Marker marker) {
+            render(marker, mWindow);
+            mWindow.setClickable(false);
+            return mWindow;
+        }
+
+        private void render(Marker marker, View view) {
+
+            String title = marker.getTitle();
+            TextView titleUi = view.findViewById(R.id.title);
+            if (title != null) {
+                titleUi.setText(title);
+            } else {
+                titleUi.setText("");
+            }
+
+            String snippet = marker.getSnippet();
+            TextView snippetUi = view.findViewById(R.id.snippet);
+            if (snippet != null) {
+                snippetUi.setText(snippet);
+            } else {
+                snippetUi.setText("");
+            }
+        }
     }
 }
