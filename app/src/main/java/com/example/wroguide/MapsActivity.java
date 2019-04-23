@@ -1,21 +1,31 @@
 package com.example.wroguide;
 
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -37,6 +47,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private final ArrayList<Location> listOfLocations = new ArrayList<Location>();
 
+    private FusedLocationProviderClient mFusedLocationProviderClient;
+
+    private android.location.Location mLastKnownLocation;
+
+    private boolean mLocationPermissionGranted;
+
+    private LatLng wroclawMainSquare = new LatLng(51.1098994,17.0321699);
+
+    private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
+
 
 
     @Override
@@ -46,7 +66,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference myRef = database.getReference("category");
 
-
+        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
@@ -65,7 +85,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         actionbar.setTitle("WroGuide");
 
         drawerLayout = findViewById(R.id.drawer_layout);
-
 
         myRef.addValueEventListener(new ValueEventListener() {
             @Override
@@ -200,27 +219,82 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     new LatLng(l.getLatitude(), l.getLongitude())).title(l.getName()));
         }
     }
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
+
+    private void getLocationPermission() {
+        /*
+         * Request location permission, so that we can get the location of the
+         * device. The result of the permission request is handled by a callback,
+         * onRequestPermissionsResult.
+         */
+        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            mLocationPermissionGranted = true;
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+        }
+    }
+
+    private void updateLocationUI() {
+        if (mMap == null) {
+            return;
+        }
+        try {
+            if (mLocationPermissionGranted) {
+                mMap.setMyLocationEnabled(true);
+                mMap.getUiSettings().setMyLocationButtonEnabled(false);
+            } else {
+                mMap.setMyLocationEnabled(false);
+                mMap.getUiSettings().setMyLocationButtonEnabled(false);
+                mLastKnownLocation = null;
+                getLocationPermission();
+            }
+        } catch (SecurityException e)  {
+            Log.e("Exception: %s", e.getMessage());
+        }
+    }
+
+    private void getDeviceLocation() {
+        /*
+         * Get the best and most recent location of the device, which may be null in rare
+         * cases when a location is not available.
+         */
+        try {
+            if (mLocationPermissionGranted) {
+                Task locationResult = mFusedLocationProviderClient.getLastLocation();
+                locationResult.addOnCompleteListener(this, new OnCompleteListener() {
+                    @Override
+                    public void onComplete(@NonNull Task task) {
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(wroclawMainSquare, 15));
+
+                        if (task.isSuccessful()) {
+                            mLastKnownLocation = (android.location.Location) task.getResult();
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
+                                    new LatLng(mLastKnownLocation.getLatitude(),
+                                            mLastKnownLocation.getLongitude()), 15));
+                        } else {
+                            Log.d(TAG, "Current location is null. Using defaults.");
+                            Log.e(TAG, "Exception: %s", task.getException());
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(wroclawMainSquare, 15));
+                            mMap.getUiSettings().setMyLocationButtonEnabled(false);
+                        }
+                    }
+                });
+            }
+        } catch(SecurityException e)  {
+            Log.e("Exception: %s", e.getMessage());
+        }
+    }
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-
-        // Add a marker in Sydney and move the camera
-        LatLng wroclawMainSquare = new LatLng(51.1098994,17.0321699);
-        mMap.addMarker(new MarkerOptions().position(wroclawMainSquare).title("Marker in Main Square"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(wroclawMainSquare, 15));
+        getLocationPermission();
+        updateLocationUI();
+        getDeviceLocation();
     }
-
-
-
 
    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -233,7 +307,20 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         return super.onOptionsItemSelected(item);
     }
 
-
-
-
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[],
+                                           @NonNull int[] grantResults) {
+        mLocationPermissionGranted = false;
+        switch (requestCode) {
+            case PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    mLocationPermissionGranted = true;
+                }
+            }
+        }
+        updateLocationUI();
+    }
 }
