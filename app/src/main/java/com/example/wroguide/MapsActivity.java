@@ -1,7 +1,12 @@
 package com.example.wroguide;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Criteria;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
@@ -10,6 +15,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.SpannableString;
@@ -23,6 +29,7 @@ import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.location.LocationListener;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -43,7 +50,11 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -57,13 +68,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private final ArrayList<Location> listOfLocations = new ArrayList<Location>();
 
+    private ArrayList<Location> listOfLocationMarkers = new ArrayList<Location>();
+
     private FusedLocationProviderClient mFusedLocationProviderClient;
 
     private android.location.Location mLastKnownLocation;
 
     private boolean mLocationPermissionGranted;
 
-    private LatLng wroclawMainSquare = new LatLng(51.1098994,17.0321699);
+    private LatLng wroclawMainSquare = new LatLng(51.1098994, 17.0321699);
 
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
 
@@ -77,9 +90,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private RadioGroup mOptions;
 
+    LocationManager mLocationManager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+
 
         FirebaseApp.initializeApp(this);
         FirebaseDatabase database = FirebaseDatabase.getInstance();
@@ -94,6 +111,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        mapFragment.setHasOptionsMenu(true);
+
 
         Toolbar toolbar = findViewById(R.id.my_toolbar);
         setSupportActionBar(toolbar);
@@ -163,7 +182,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 int id = menuItem.getItemId();
                 switch (id) {
                     case R.id.nav_all:
-                        drawAllMarkers(listOfLocations);
+                        drawAllMarkers(listOfLocations, listOfLocationMarkers);
                         Toast.makeText(MapsActivity.this, "Clicked All Locations button!",
                                 Toast.LENGTH_LONG).show();
                         drawerLayout.closeDrawers();
@@ -173,7 +192,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         //Do some thing here
                         // add navigation drawer item onclick method here
 
-                        drawMarkers(listOfLocations, Category.FOOD);
+                        drawMarkers(listOfLocations, listOfLocationMarkers, Category.FOOD);
                         Toast.makeText(MapsActivity.this, "Clicked Food button!",
                                 Toast.LENGTH_LONG).show();
                         drawerLayout.closeDrawers();
@@ -183,7 +202,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         //Do some thing here
                         // add navigation drawer item onclick method here
 
-                        drawMarkers(listOfLocations, Category.ART);
+                        drawMarkers(listOfLocations, listOfLocationMarkers, Category.ART);
                         Toast.makeText(MapsActivity.this, "Clicked Art button!",
                                 Toast.LENGTH_LONG).show();
                         drawerLayout.closeDrawers();
@@ -191,7 +210,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     case R.id.nav_architecture:
                         //Do some thing here
                         // add navigation drawer item onclick method here
-                        drawMarkers(listOfLocations, Category.ARCHITECTURAL);
+                        drawMarkers(listOfLocations, listOfLocationMarkers, Category.ARCHITECTURAL);
                         Toast.makeText(MapsActivity.this, "Clicked Architecture button!",
                                 Toast.LENGTH_LONG).show();
                         drawerLayout.closeDrawers();
@@ -200,7 +219,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         //Do some thing here
                         // add navigation drawer item onclick method here
 
-                        drawMarkers(listOfLocations, Category.SHOPPING);
+                        drawMarkers(listOfLocations, listOfLocationMarkers, Category.SHOPPING);
                         Toast.makeText(MapsActivity.this, "Clicked Shopping button!",
                                 Toast.LENGTH_LONG).show();
                         drawerLayout.closeDrawers();
@@ -208,7 +227,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     case R.id.nav_history:
                         //Do some thing here
                         // add navigation drawer item onclick method here
-                        drawMarkers(listOfLocations, Category.HISTORICAL);
+                        drawMarkers(listOfLocations, listOfLocationMarkers, Category.HISTORICAL);
                         Toast.makeText(MapsActivity.this, "Clicked Historical Objects button!",
                                 Toast.LENGTH_LONG).show();
                         drawerLayout.closeDrawers();
@@ -218,24 +237,71 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
+
+
+        //Checking the location
+
+        requestLocation();
+
     }
 
-    private void drawMarkers(ArrayList<Location> locations, Category chosenCategory){
+
+    //Pop up message / alert box for close locations
+
+    private void showAlert(final Location location, ArrayList<Location> markers) {
+
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
+        alertBuilder.setTitle("Close Location:");
+        alertBuilder.setMessage(location.getName());
+        alertBuilder.setCancelable(true);
+
+        alertBuilder.setPositiveButton(
+                "Navigate",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                });
+
+        alertBuilder.setNegativeButton(
+                "Cancel",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        listOfLocationMarkers.remove(location);
+                        dialog.cancel();
+                    }
+                });
+
+        AlertDialog alert = alertBuilder.create();
+        alert.show();
+    }
+
+
+    private void drawMarkers(ArrayList<Location> locations, ArrayList<Location> markers, Category chosenCategory){
 
         mMap.clear();
+        markers.clear();
+
+
         for (Location l : locations) {
             if(l.getCategory().equals(chosenCategory)) {
                 mMap.addMarker(new MarkerOptions().position(
                         new LatLng(l.getLatitude(), l.getLongitude())).title(l.getName()).snippet(l.getDescription()));
+                markers.add(l);
             }
         }
     }
 
-    private void drawAllMarkers(ArrayList<Location> locations) {
+    private void drawAllMarkers(ArrayList<Location> locations, ArrayList<Location> markers) {
+
         mMap.clear();
+        markers.clear();
+
+
         for (Location l : locations) {
             mMap.addMarker(new MarkerOptions().position(
                     new LatLng(l.getLatitude(), l.getLongitude())).title(l.getName()).snippet(l.getDescription()));
+            markers.add(l);
         }
     }
 
@@ -263,10 +329,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         try {
             if (mLocationPermissionGranted) {
                 mMap.setMyLocationEnabled(true);
-                mMap.getUiSettings().setMyLocationButtonEnabled(false);
+                mMap.getUiSettings().setZoomControlsEnabled(true);
+                mMap.getUiSettings().setZoomGesturesEnabled(true);
             } else {
                 mMap.setMyLocationEnabled(false);
                 mMap.getUiSettings().setMyLocationButtonEnabled(false);
+                mMap.getUiSettings().setZoomControlsEnabled(false);
+                mMap.getUiSettings().setZoomGesturesEnabled(false);
                 mLastKnownLocation = null;
                 getLocationPermission();
             }
@@ -344,6 +413,92 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         updateLocationUI();
     }
 
+
+    private void requestLocation() {
+
+        Criteria criteria = new Criteria();
+        criteria.setAccuracy(Criteria.ACCURACY_FINE);
+        criteria.setPowerRequirement(Criteria.POWER_HIGH);
+
+        mLocationManager = (LocationManager)  this.getSystemService(this.LOCATION_SERVICE);
+        String provider = mLocationManager.getBestProvider(criteria, true);
+
+        mLocationManager.requestLocationUpdates(provider, 5000, 2, (android.location.LocationListener) locationListener);
+    }
+
+
+
+
+    LocationListener locationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(android.location.Location location) {
+
+
+            if (!listOfLocationMarkers.isEmpty()) {
+                checkLocations(location.getLatitude(), location.getLongitude(), listOfLocationMarkers);
+            }
+            Toast.makeText(MapsActivity.this, Double.toString(location.getLatitude()),
+                    Toast.LENGTH_LONG).show();
+
+
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+    };
+
+
+
+    private void checkLocations(double currentLatitude, double currentLongitude, ArrayList<Location> markers) {
+
+        Double smallestDistance = Double.MAX_VALUE;
+        int index = 0;
+        int smallestIndex = 0;
+        for (Location m : markers) {
+            Double tempDistance1 = distance(currentLatitude, currentLongitude, m.getLatitude(), m.getLongitude());
+
+            if (smallestDistance > tempDistance1) {
+
+                smallestDistance = tempDistance1;
+                smallestIndex = index;
+            }
+
+            index++;
+        }
+            if (smallestDistance < 20) { showAlert(markers.get(smallestIndex), markers); }
+
+    }
+
+
+
+    private static double distance(double lat1, double lon1, double lat2, double lon2) {
+        if ((lat1 == lat2) && (lon1 == lon2)) {
+            return 0;
+        }
+        else {
+            double theta = lon1 - lon2;
+            double dist = Math.sin(Math.toRadians(lat1)) * Math.sin(Math.toRadians(lat2)) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.cos(Math.toRadians(theta));
+            dist = Math.acos(dist);
+            dist = Math.toDegrees(dist);
+            dist = dist * 60 * 1.1515 * 1609.344;
+            return (dist);
+        }
+    }
+
+
+
     /** Demonstrates customizing the info window and/or its contents. */
     class CustomInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
 
@@ -388,4 +543,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
     }
+
+
+
 }
