@@ -35,6 +35,7 @@
 
         <activity
             android:name=".MapsActivity"
+            android:configChanges="orientation"
             android:theme="@style/AppTheme.Launcher"
             android:label="@string/title_activity_maps">
             <intent-filter>

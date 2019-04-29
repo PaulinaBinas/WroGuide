@@ -43,6 +43,7 @@ import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -94,15 +95,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
 
-    private Marker mLastSelectedMarker;
+    private Polyline route;
 
-    private TextView mTopText;
-
-    private SeekBar mRotationBar;
-
-    private CheckBox mFlatBox;
-
-    private RadioGroup mOptions;
+    private Marker lastClickedMarker;
 
     LocationManager mLocationManager;
 
@@ -261,7 +256,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
-
     //Pop up message / alert box for close locations
 
     private void showAlert(double currentLatitude, double currentLongitude, final Location location, final ArrayList<Location> markers) {
@@ -397,8 +391,23 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         updateLocationUI();
         getDeviceLocation();
         mMap.setInfoWindowAdapter(new CustomInfoWindowAdapter());
-
-
+        mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+            @Override
+            public void onInfoWindowClick(Marker marker) {
+                drawRoute(marker);
+                lastClickedMarker = marker;
+            }
+        });
+        mMap.setOnInfoWindowCloseListener(new GoogleMap.OnInfoWindowCloseListener() {
+            @Override
+            public void onInfoWindowClose(Marker marker) {
+                if(route != null) {
+                    route.remove();
+                    route = null;
+                }
+                lastClickedMarker = null;
+            }
+        });
     }
 
    @Override
@@ -456,6 +465,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (!listOfLocationMarkers.isEmpty()) {
                 checkCloseLocations(location.getLatitude(), location.getLongitude(), listOfLocationMarkers);
             }
+
+            if(route != null) {
+                route.remove();
+                drawRoute(lastClickedMarker);
+            }
         }
 
         @Override
@@ -492,7 +506,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             index++;
         }
-            if (smallestDistance < 20) { showAlert(currentLatitude, currentLongitude, markers.get(smallestIndex), markers); }
+            if (smallestDistance < 20) {
+                showAlert(currentLatitude, currentLongitude, markers.get(smallestIndex), markers);
+                if(route != null && lastClickedMarker.equals(markers.get(smallestIndex))) {
+                    route.remove();
+                    route = null;
+                }
+            }
 
     }
 
@@ -685,9 +705,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 polylineOptions.geodesic(true);
             }
 
-            if (polylineOptions!=null) {
+            if (polylineOptions != null) {
                 oldPoints = points;
-                mMap.addPolyline(polylineOptions);
+                route = mMap.addPolyline(polylineOptions);
             } else {
                 Toast.makeText(getApplicationContext(), "Direction not found!", Toast.LENGTH_SHORT).show();
             }
@@ -696,5 +716,17 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+    private void drawRoute(Marker marker) {
+        LatLng origin = new LatLng(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
+        String url = "";
+        if(marker != null) {
+            LatLng dest = marker.getPosition();
+            url = getRequestUrl(origin, dest);
+        }
+
+        TaskRequestDirections requestDirectionsTask = new TaskRequestDirections();
+
+        requestDirectionsTask.execute(url + "&mode=walking");
+    }
 
 }
