@@ -24,6 +24,7 @@ import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.RadioGroup;
@@ -263,14 +264,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     //Pop up message / alert box for close locations
 
-    private void showAlert(double currentLatitude, double currentLongitude, final Location location, ArrayList<Location> markers) {
-
-
-        final LatLng currentLocation = new LatLng(currentLatitude, currentLongitude);
-        final LatLng destinationLocation = new LatLng(location.getLatitude(), location.getLongitude());
-
-
-
+    private void showAlert(double currentLatitude, double currentLongitude, final Location location, final ArrayList<Location> markers) {
 
 
 
@@ -283,26 +277,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
         alertBuilder.setPositiveButton(
-                "Navigate",
+                "OK",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-
-                        String url = getRequestUrl(currentLocation, destinationLocation);
-                        TaskRequestDirections taskRequestDirections = new TaskRequestDirections();
-                        taskRequestDirections.execute(url);
-
+                        markers.remove(location);
                         dialog.cancel();
                     }
                 });
 
-        alertBuilder.setNegativeButton(
-                "Cancel",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        listOfLocationMarkers.remove(location);
-                        dialog.cancel();
-                    }
-                });
 
         AlertDialog alert = alertBuilder.create();
         alert.show();
@@ -467,14 +449,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         @Override
         public void onLocationChanged(android.location.Location location) {
 
+            final LatLng currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
+
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLocation));
 
             if (!listOfLocationMarkers.isEmpty()) {
-                checkLocations(location.getLatitude(), location.getLongitude(), listOfLocationMarkers);
+                checkCloseLocations(location.getLatitude(), location.getLongitude(), listOfLocationMarkers);
             }
-            Toast.makeText(MapsActivity.this, Double.toString(location.getLatitude()),
-                    Toast.LENGTH_LONG).show();
-
-
         }
 
         @Override
@@ -495,7 +476,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
 
-    private void checkLocations(double currentLatitude, double currentLongitude, ArrayList<Location> markers) {
+    private void checkCloseLocations(double currentLatitude, double currentLongitude, ArrayList<Location> markers) {
 
         Double smallestDistance = Double.MAX_VALUE;
         int index = 0;
@@ -575,7 +556,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             } else {
                 snippetUi.setText("");
             }
+
+
+
         }
+
+
+
     }
 
 

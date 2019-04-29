@@ -10,9 +10,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-/**
- * Created by NgocTri on 12/11/2017.
- */
 
 public class DirectionsParser {
     /**
@@ -64,10 +61,8 @@ public class DirectionsParser {
         return routes;
     }
 
-    /**
-     * Method to decode polyline
-     * Source : http://jeffreysambells.com/2010/05/27/decoding-polylines-from-google-maps-direction-api-with-java
-     */
+    //Method to decode polyline
+
     private List decodePolyline(String encoded) {
 
         List poly = new ArrayList();
