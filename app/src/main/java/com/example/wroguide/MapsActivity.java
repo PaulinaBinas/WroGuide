@@ -4,11 +4,15 @@ import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.location.Criteria;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
@@ -40,6 +44,8 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -69,6 +75,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
@@ -103,6 +111,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     ArrayList oldPoints;
 
+    private Timer t;
+
+    private Marker userLocationMarker;
+
+    private MarkerOptions userLocationMarkerOptions;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -134,6 +148,17 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         actionbar.setTitle("WroGuide");
 
         drawerLayout = findViewById(R.id.drawer_layout);
+        t = new Timer();
+        t.scheduleAtFixedRate(new TimerTask(){
+            @Override
+            public void run(){
+                MapsActivity.this.runOnUiThread(new Runnable() {
+                    public void run() {
+                        changeLocationIcon();
+                    }
+                });
+            }
+        },0,500);
 
         myRef.addValueEventListener(new ValueEventListener() {
             @Override
@@ -298,6 +323,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 markers.add(l);
             }
         }
+
+        userLocationMarker = mMap.addMarker(userLocationMarkerOptions);
     }
 
     private void drawAllMarkers(ArrayList<Location> locations, ArrayList<Location> markers) {
@@ -311,6 +338,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     new LatLng(l.getLatitude(), l.getLongitude())).title(l.getName()).snippet(l.getDescription()));
             markers.add(l);
         }
+        userLocationMarker = mMap.addMarker(userLocationMarkerOptions);
     }
 
     private void getLocationPermission() {
@@ -341,12 +369,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 mMap.getUiSettings().setZoomGesturesEnabled(true);
             } else {
                 mMap.setMyLocationEnabled(false);
-                mMap.getUiSettings().setMyLocationButtonEnabled(false);
-                mMap.getUiSettings().setZoomControlsEnabled(false);
                 mMap.getUiSettings().setZoomGesturesEnabled(false);
                 mLastKnownLocation = null;
                 getLocationPermission();
             }
+            mMap.setMyLocationEnabled(false);
+            mMap.getUiSettings().setMyLocationButtonEnabled(false);
         } catch (SecurityException e)  {
             Log.e("Exception: %s", e.getMessage());
         }
@@ -367,6 +395,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                         if (task.isSuccessful()) {
                             mLastKnownLocation = (android.location.Location) task.getResult();
+                            LatLng loc = new LatLng(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
+                            Bitmap icon = getBitmap(R.drawable.dark_marker);
+                            userLocationMarkerOptions = new MarkerOptions()
+                                    .zIndex(1)
+                                    .position(loc)
+                                    .icon(BitmapDescriptorFactory.fromBitmap(icon));
+                            userLocationMarker = mMap.addMarker(userLocationMarkerOptions);
                             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
                                     new LatLng(mLastKnownLocation.getLatitude(),
                                             mLastKnownLocation.getLongitude()), 15));
@@ -408,6 +443,27 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 lastClickedMarker = null;
             }
         });
+    }
+
+    private void changeLocationIcon() {
+        if(userLocationMarker != null) {
+            if(userLocationMarker.getAlpha() == 0.5f) {
+                userLocationMarker.setAlpha(1.0f);
+            } else {
+                userLocationMarker.setAlpha(0.5f);
+            }
+        }
+    }
+
+    private Bitmap getBitmap(int drawableRes) {
+        Drawable drawable = getResources().getDrawable(drawableRes);
+        Canvas canvas = new Canvas();
+        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        canvas.setBitmap(bitmap);
+        drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+        drawable.draw(canvas);
+
+        return bitmap;
     }
 
    @Override
@@ -459,8 +515,20 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         public void onLocationChanged(android.location.Location location) {
 
             final LatLng currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
-
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLocation));
+            mLastKnownLocation = location;
+            Bitmap icon = getBitmap(R.drawable.dark_marker);
+            userLocationMarkerOptions = new MarkerOptions()
+                    .zIndex(1)
+                    .position(currentLocation)
+                    .icon(BitmapDescriptorFactory.fromBitmap(icon));
+            if(userLocationMarker != null) {
+                userLocationMarker.setPosition(currentLocation);
+            } else {
+                userLocationMarker = mMap.addMarker(new MarkerOptions()
+                    .zIndex(1)
+                    .position(currentLocation)
+                    .icon(BitmapDescriptorFactory.fromBitmap(icon)));
+            }
 
             if (!listOfLocationMarkers.isEmpty()) {
                 checkCloseLocations(location.getLatitude(), location.getLongitude(), listOfLocationMarkers);
