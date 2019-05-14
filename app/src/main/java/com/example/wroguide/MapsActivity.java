@@ -1,8 +1,8 @@
 package com.example.wroguide;
 
-import android.Manifest;
-import android.content.Context;
+import android.app.Activity;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -12,27 +12,23 @@ import android.location.Criteria;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
+import android.support.annotation.ColorInt;
+import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.res.ResourcesCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.text.SpannableString;
-import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.ImageView;
-import android.widget.RadioGroup;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.location.LocationListener;
@@ -43,9 +39,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.UiSettings;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -68,18 +63,18 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
 
-public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, Serializable {
 
     private GoogleMap mMap;
 
@@ -117,6 +112,30 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private MarkerOptions userLocationMarkerOptions;
 
+    static final int PICK_DIRECTIONS_REQUEST = 1;
+
+    private Map<Marker, String> allMarkersMap = new HashMap<Marker, String>();
+
+
+    //Handles if user chose directions or close button
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        if (requestCode == 1) {
+            if(resultCode == Activity.RESULT_OK){
+                //String result=data.getStringExtra("result");
+                drawRoute(lastClickedMarker.getPosition());
+                Intent i = new Intent(getApplicationContext(), CurrentRouteActivityWindow.class);
+                startActivity(i);
+            }
+            if (resultCode == Activity.RESULT_CANCELED) {
+                //Write your code if there's no result
+                Log.i("directions", "CLOSE");
+            }
+        }
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,8 +143,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
         FirebaseApp.initializeApp(this);
+
+
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference myRef = database.getReference("category");
+
 
         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -160,6 +182,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         },0,500);
 
+
+
         myRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -190,6 +214,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     }
                     for (DataSnapshot locationSnapshot : categorySnapshot.getChildren()) {
 
+                        String id = c+locationSnapshot.child("id").getValue().toString();
                         String name = locationSnapshot.child("name").getValue().toString();
                         String latitudeTemp = locationSnapshot.child("latitude").getValue().toString();
                         String longitudeTemp = locationSnapshot.child("longitude").getValue().toString();
@@ -198,7 +223,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         double latitude = Double.parseDouble(latitudeTemp);
                         double longitude = Double.parseDouble(longitudeTemp);
 
-                        listOfLocations.add(new Location(name, category, latitude, longitude, description));
+                        listOfLocations.add(new Location(id, name, category, latitude, longitude, description));
                     }
 
                 }
@@ -310,16 +335,55 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
+    //gets icon from drawables
+
+    private int getIcon(Category category) {
+
+        switch(category) {
+
+            case FOOD: return(R.drawable.ic_local_dining_black_24dp);
+
+            case SHOPPING: return(R.drawable.ic_local_grocery_store_black_24dp);
+
+            case ART: return(R.drawable.ic_local_activity_black_24dp);
+
+            case HISTORICAL: return(R.drawable.ic_access_time_black_24dp);
+
+            case ARCHITECTURAL: return(R.drawable.ic_store_mall_directory_black_24dp);
+
+        }
+        return 0;
+    }
+
+    //changes vector to bitmap
+
+    private BitmapDescriptor vectorToBitmap(Category category, @ColorInt int color) {
+        Drawable vectorDrawable = ResourcesCompat.getDrawable(getResources(), getIcon(category), null);
+        Bitmap bitmap = Bitmap.createBitmap(vectorDrawable.getIntrinsicWidth(),
+                vectorDrawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        vectorDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        DrawableCompat.setTint(vectorDrawable, color);
+        vectorDrawable.draw(canvas);
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
+    }
+
+
+
     private void drawMarkers(ArrayList<Location> locations, ArrayList<Location> markers, Category chosenCategory){
 
         mMap.clear();
+        allMarkersMap.clear();
         markers.clear();
 
+        BitmapDescriptor icon = vectorToBitmap(chosenCategory, Color.parseColor("#0033AA"));
 
         for (Location l : locations) {
             if(l.getCategory().equals(chosenCategory)) {
-                mMap.addMarker(new MarkerOptions().position(
-                        new LatLng(l.getLatitude(), l.getLongitude())).title(l.getName()).snippet(l.getDescription()));
+
+                Marker tempMarker = mMap.addMarker(new MarkerOptions().position(
+                        new LatLng(l.getLatitude(), l.getLongitude())).title(l.getName()).snippet(l.getDescription()).icon(icon));
+                allMarkersMap.put(tempMarker, l.getId());
                 markers.add(l);
             }
         }
@@ -330,12 +394,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void drawAllMarkers(ArrayList<Location> locations, ArrayList<Location> markers) {
 
         mMap.clear();
+        allMarkersMap.clear();
         markers.clear();
 
+        BitmapDescriptor icon;
 
         for (Location l : locations) {
-            mMap.addMarker(new MarkerOptions().position(
-                    new LatLng(l.getLatitude(), l.getLongitude())).title(l.getName()).snippet(l.getDescription()));
+            icon = vectorToBitmap(l.getCategory(), Color.parseColor("#0033AA"));
+            Marker tempMarker = mMap.addMarker(new MarkerOptions().position(
+                    new LatLng(l.getLatitude(), l.getLongitude())).title(l.getName()).snippet(l.getDescription()).icon(icon));
+            allMarkersMap.put(tempMarker, l.getId());
             markers.add(l);
         }
         userLocationMarker = mMap.addMarker(userLocationMarkerOptions);
@@ -417,6 +485,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         } catch(SecurityException e)  {
             Log.e("Exception: %s", e.getMessage());
         }
+
     }
 
     @Override
@@ -425,10 +494,42 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         getLocationPermission();
         updateLocationUI();
         getDeviceLocation();
-        mMap.setInfoWindowAdapter(new CustomInfoWindowAdapter());
+        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+
+                String id = allMarkersMap.get(marker);
+                String title = marker.getTitle();
+                String snippet = marker.getSnippet();
+
+
+                Intent i = new Intent(getApplicationContext(), MarkerInfoActivityWindow.class);
+
+                Bundle bundle = new Bundle();
+
+                bundle.putString("id", id);
+                bundle.putString("title", title);
+                bundle.putString("snippet", snippet);
+
+                i.putExtras(bundle);
+
+                lastClickedMarker = marker;
+
+                startActivityForResult(i, PICK_DIRECTIONS_REQUEST, bundle);
+
+
+
+
+
+                return false;
+            }
+
+        });
+        /*mMap.setInfoWindowAdapter(new CustomInfoWindowAdapter());
         mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
             @Override
             public void onInfoWindowClick(Marker marker) {
+
                 drawRoute(marker);
                 lastClickedMarker = marker;
             }
@@ -436,13 +537,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.setOnInfoWindowCloseListener(new GoogleMap.OnInfoWindowCloseListener() {
             @Override
             public void onInfoWindowClose(Marker marker) {
+
                 if(route != null) {
                     route.remove();
                     route = null;
                 }
                 lastClickedMarker = null;
             }
-        });
+        }); */
+
     }
 
     private void changeLocationIcon() {
@@ -536,7 +639,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             if(route != null) {
                 route.remove();
-                drawRoute(lastClickedMarker);
+                drawRoute(lastClickedMarker.getPosition());
             }
         }
 
@@ -601,57 +704,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
-
-    /** Demonstrates customizing the info window and/or its contents. */
-    class CustomInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
-
-        // These are both viewgroups containing an ImageView with id "badge" and two TextViews with id
-        // "title" and "snippet".
-        private final View mWindow;
-
-        CustomInfoWindowAdapter() {
-            mWindow = getLayoutInflater().inflate(R.layout.custom_info_window, null);
-        }
-
-        @Override
-        public View getInfoWindow(Marker marker) {
-            render(marker, mWindow);
-            mWindow.setClickable(false);
-            return mWindow;
-        }
-
-        @Override
-        public View getInfoContents(Marker marker) {
-            render(marker, mWindow);
-            mWindow.setClickable(false);
-            return mWindow;
-        }
-
-        private void render(Marker marker, View view) {
-
-            String title = marker.getTitle();
-            TextView titleUi = view.findViewById(R.id.title);
-            if (title != null) {
-                titleUi.setText(title);
-            } else {
-                titleUi.setText("");
-            }
-
-            String snippet = marker.getSnippet();
-            TextView snippetUi = view.findViewById(R.id.snippet);
-            if (snippet != null) {
-                snippetUi.setText(snippet);
-            } else {
-                snippetUi.setText("");
-            }
-
-
-
-        }
-
-
-
-    }
 
 
     private String getRequestUrl(LatLng origin, LatLng dest) {
@@ -784,12 +836,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-    private void drawRoute(Marker marker) {
+    public void drawRoute(LatLng destination) {
         LatLng origin = new LatLng(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
         String url = "";
-        if(marker != null) {
-            LatLng dest = marker.getPosition();
-            url = getRequestUrl(origin, dest);
+        if(destination != null) {
+            url = getRequestUrl(origin, destination);
         }
 
         TaskRequestDirections requestDirectionsTask = new TaskRequestDirections();

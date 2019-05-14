@@ -2,13 +2,15 @@ package com.example.wroguide;
 
 public class Location {
 
+    private String id;
     private String name;
     private Category category;
     private double longitude;
     private double latitude;
     private String description;
 
-    public Location(String name, Category category, double latitude, double longitude, String description) {
+    public Location(String id, String name, Category category, double latitude, double longitude, String description) {
+        this.id = id;
         this.name = name;
         this.category = category;
         this.latitude = latitude;
@@ -22,6 +24,8 @@ public class Location {
         this.latitude = latitude;
         this.longitude = longitude;
     }
+
+    public String getId() { return id; }
 
     public String getName() {
         return name;

@@ -20,4 +20,13 @@
         <item name="android:windowBackground">@drawable/splash_screen</item>
     </style>
 
+    <style name="AppTheme.PopUp1">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowCloseOnTouchOutside">true</item>
+    </style>
+
+    <style name="AppTheme.PopUp2">
+        <item name="android:windowIsTranslucent">true</item>
+    </style>
+
 </resources>

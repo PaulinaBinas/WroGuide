@@ -7,4 +7,9 @@
     <string name="shopping">Shopping</string>
     <string name="history">Historical Objects</string>
     <string name="all">All Locations</string>
+    <string name="textview">TextView</string>
+    <string name="close">Close</string>
+    <string name="directions">Directions</string>
+    <string name="title">Title</string>
+    <string name="snippet">Snippet</string>
 </resources>
