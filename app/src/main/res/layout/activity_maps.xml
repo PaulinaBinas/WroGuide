@@ -6,7 +6,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true">
-
     <FrameLayout
         android:id="@+id/content_frame_toolbar"
         android:layout_width="match_parent"
@@ -19,37 +18,21 @@
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
             android:elevation="4dp"
-            android:theme="@style/customToolbar"
-            app:popupTheme="@style/AppTheme" />
+            app:popupTheme="@style/AppTheme"
+            app:titleTextColor="#FFFFFF" />
     </FrameLayout>
-
     <FrameLayout
         android:id="@+id/content_frame"
         android:layout_width="match_parent"
         android:layout_height="fill_parent"
         android:paddingTop="?attr/actionBarSize">
-
         <fragment xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:tools="http://schemas.android.com/tools"
-            android:id="@+id/map"
-            android:name="com.google.android.gms.maps.SupportMapFragment"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            tools:context=".MapsActivity" />
-
-
-
-    </FrameLayout>
-
-
-    <android.support.design.widget.NavigationView
-        android:id="@+id/nav_view"
-        android:layout_width="wrap_content"
+        xmlns:map="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="start"
-        android:fitsSystemWindows="true"
-        android:theme="@style/AppTheme"
-        android:background="@color/white"
-        app:menu="@menu/drawer_view"
-        app:headerLayout="@layout/nav_header" />
+        tools:context=".MapsActivity" />
+    </FrameLayout>
 </android.support.v4.widget.DrawerLayout>
