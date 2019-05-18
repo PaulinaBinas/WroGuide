@@ -12,4 +12,6 @@
     <string name="directions">Directions</string>
     <string name="title">Title</string>
     <string name="snippet">Snippet</string>
+    <string name="distance">Distance of route: </string>
+    <string name="time">Time to cover route: </string>
 </resources>

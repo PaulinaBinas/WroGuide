@@ -42,6 +42,8 @@ public class MarkerInfoActivityWindow extends Activity {
     public void download(String id) {
 
         storageReference = FirebaseStorage.getInstance().getReference().child(id+".jpg");
+        final ImageView image_view = (ImageView) findViewById(R.id.place_image);
+        image_view.setVisibility(View.GONE);
 
         Log.i("id", id);
         final long ONE_MEGABYTE = 1024 * 1024;
@@ -49,7 +51,8 @@ public class MarkerInfoActivityWindow extends Activity {
             @Override
             public void onSuccess(byte[] bytes) {
                 Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                ImageView image_view = (ImageView) findViewById(R.id.place_image);
+                findViewById(R.id.loadingPanel).setVisibility(View.GONE);
+                image_view.setVisibility(View.VISIBLE);
                 image_view.setImageBitmap(bitmap);
                 Log.i("Downloading image", "Successful");
 
@@ -69,7 +72,7 @@ public class MarkerInfoActivityWindow extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_marker_info_window);
 
-        Bundle bundle = getIntent().getExtras();
+        final Bundle bundle = getIntent().getExtras();
 
         id = bundle.getString("id");
         title = bundle.getString("title");
@@ -84,16 +87,15 @@ public class MarkerInfoActivityWindow extends Activity {
         title_view.setText(title);
         snippet_view.setText(snippet);
 
-        final Intent returnIntent = new Intent();
-
+        final Intent intent = new Intent();
+        intent.putExtras(bundle);
         download(id);
 
         btn_directions = (Button) findViewById(R.id.btn_directions);
         btn_directions.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                setResult(Activity.RESULT_OK, returnIntent);
+                setResult(Activity.RESULT_OK, intent);
                 finish();
             }
         });
@@ -105,7 +107,7 @@ public class MarkerInfoActivityWindow extends Activity {
             @Override
             public void onClick(View v) {
 
-                setResult(Activity.RESULT_CANCELED, returnIntent);
+                setResult(Activity.RESULT_CANCELED, new Intent());
                 finish();
             }
         });
@@ -116,13 +118,13 @@ public class MarkerInfoActivityWindow extends Activity {
         DisplayMetrics dm = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(dm);
 
-        int width = dm.widthPixels;
+        int width = dm.widthPixels - 30;
         int height = dm.heightPixels;
 
-        getWindow().setLayout(width, (int)(height*1));
+        getWindow().setLayout(width, (int)(height/1.5));
 
         WindowManager.LayoutParams params = getWindow().getAttributes();
-        params.gravity = Gravity.BOTTOM;
+        params.gravity = Gravity.CENTER;
 
         getWindow().setAttributes(params);
 

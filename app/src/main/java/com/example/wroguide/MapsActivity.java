@@ -116,6 +116,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private Map<Marker, String> allMarkersMap = new HashMap<Marker, String>();
 
+    private double distance;
+
+    private double time;
+
 
     //Handles if user chose directions or close button
 
@@ -127,6 +131,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 //String result=data.getStringExtra("result");
                 drawRoute(lastClickedMarker.getPosition());
                 Intent i = new Intent(getApplicationContext(), CurrentRouteActivityWindow.class);
+                Bundle bundle = new Bundle();
+
+                bundle.putDouble("distance", distance);
+                bundle.putDouble("time", time);
+
+                i.putExtras(bundle);
                 startActivity(i);
             }
             if (resultCode == Activity.RESULT_CANCELED) {
@@ -501,6 +511,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 String id = allMarkersMap.get(marker);
                 String title = marker.getTitle();
                 String snippet = marker.getSnippet();
+                distance = distance(marker.getPosition().latitude,
+                        marker.getPosition().longitude, mLastKnownLocation.getLatitude(),
+                        mLastKnownLocation.getLongitude());
+                time = 1.4 * distance;
 
 
                 Intent i = new Intent(getApplicationContext(), MarkerInfoActivityWindow.class);
@@ -848,4 +862,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         requestDirectionsTask.execute(url + "&mode=walking");
     }
 
+    public void setLastClickedMarker(Marker lastClickedMarker) {
+        this.lastClickedMarker = lastClickedMarker;
+    }
 }
