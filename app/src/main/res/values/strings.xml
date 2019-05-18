@@ -1,4 +1,15 @@
 <resources>
-    <string name="app_name">My Application</string>
+    <string name="app_name">WroGuide</string>
     <string name="title_activity_maps">Map</string>
+    <string name="food">Food</string>
+    <string name="art">Art</string>
+    <string name="architecture">Architecture</string>
+    <string name="shopping">Shopping</string>
+    <string name="history">Historical Objects</string>
+    <string name="all">All Locations</string>
+    <string name="textview">TextView</string>
+    <string name="close">Close</string>
+    <string name="directions">Directions</string>
+    <string name="title">Title</string>
+    <string name="snippet">Snippet</string>
 </resources>

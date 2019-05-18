@@ -1,4 +1,4 @@
-package com.paulinabinas.myapplication;
+package com.example.wroguide;
 
 import org.junit.Test;
 
