@@ -69,6 +69,7 @@ public class MarkerInfoActivityWindow extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_marker_info_window);
 

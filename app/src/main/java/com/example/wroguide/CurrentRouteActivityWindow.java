@@ -20,6 +20,14 @@ public class CurrentRouteActivityWindow extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+
+        // ...but notify us that it happened.
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_current_route_window);
         text_view_distance = findViewById(R.id.distanceOfRoute);
