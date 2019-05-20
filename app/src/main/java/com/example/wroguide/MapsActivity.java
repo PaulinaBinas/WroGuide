@@ -137,11 +137,18 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 bundle.putDouble("time", time);
 
                 i.putExtras(bundle);
-                startActivity(i);
+                startActivityForResult(i, 11);
             }
             if (resultCode == Activity.RESULT_CANCELED) {
                 //Write your code if there's no result
                 Log.i("directions", "CLOSE");
+            }
+        }
+
+        if (requestCode == 11) {
+            if(route != null) {
+                route.remove();
+                route = null;
             }
         }
     }
@@ -508,6 +515,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public boolean onMarkerClick(Marker marker) {
 
+
+                if (marker.equals(userLocationMarker)) {
+                    mMap.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
+                    return true;
+                }
+
                 String id = allMarkersMap.get(marker);
                 String title = marker.getTitle();
                 String snippet = marker.getSnippet();
@@ -515,6 +528,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         marker.getPosition().longitude, mLastKnownLocation.getLatitude(),
                         mLastKnownLocation.getLongitude());
                 time = 1.4 * distance;
+
+                mMap.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
 
 
                 Intent i = new Intent(getApplicationContext(), MarkerInfoActivityWindow.class);
@@ -535,7 +550,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
 
-                return false;
+                return true;
             }
 
         });
