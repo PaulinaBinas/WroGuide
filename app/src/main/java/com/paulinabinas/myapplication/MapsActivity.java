@@ -1,11 +1,14 @@
 package com.paulinabinas.myapplication;
 
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.design.widget.NavigationView;
+import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.MenuItem;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -17,6 +20,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
+    private DrawerLayout drawerLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,7 +39,49 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         actionbar.setHomeAsUpIndicator(R.drawable.ic_menu);
         actionbar.setTitle("WroGuide");
 
-        DrawerLayout drawerLayout = findViewById(R.id.drawer_layout);
+        drawerLayout = findViewById(R.id.drawer_layout);
+        NavigationView navigation = (NavigationView) findViewById(R.id.nav_view);
+        navigation.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(MenuItem menuItem) {
+                int id = menuItem.getItemId();
+                switch (id) {
+                    case R.id.nav_all:
+                        Toast.makeText(MapsActivity.this, "Clicked All Locations button!",
+                                Toast.LENGTH_LONG).show();
+                        drawerLayout.closeDrawers();
+                        break;
+
+                    case R.id.nav_food:
+                        Toast.makeText(MapsActivity.this, "Clicked Food button!",
+                                Toast.LENGTH_LONG).show();
+                        drawerLayout.closeDrawers();
+                        break;
+
+                    case R.id.nav_museums:
+                        Toast.makeText(MapsActivity.this, "Clicked Art button!",
+                                Toast.LENGTH_LONG).show();
+                        drawerLayout.closeDrawers();
+                        break;
+                    case R.id.nav_architecture:
+                        Toast.makeText(MapsActivity.this, "Clicked Architecture button!",
+                                Toast.LENGTH_LONG).show();
+                        drawerLayout.closeDrawers();
+                        break;
+                    case R.id.nav_shopping:
+                        Toast.makeText(MapsActivity.this, "Clicked Shopping button!",
+                                Toast.LENGTH_LONG).show();
+                        drawerLayout.closeDrawers();
+                        break;
+                    case R.id.nav_history:
+                        Toast.makeText(MapsActivity.this, "Clicked Historical Objects button!",
+                                Toast.LENGTH_LONG).show();
+                        drawerLayout.closeDrawers();
+                        break;
+                }
+                return false;
+            }
+        });
     }
 
 
@@ -56,5 +102,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                drawerLayout.openDrawer(GravityCompat.START);
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }

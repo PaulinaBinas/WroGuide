@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_all"
+            android:title="@string/all" />
+        <item
+            android:id="@+id/nav_food"
+            android:title="@string/food" />
+        <item
+            android:id="@+id/nav_museums"
+            android:title="@string/art"/>
+        <item
+            android:id="@+id/nav_architecture"
+            android:title="@string/architecture" />
+        <item
+            android:id="@+id/nav_shopping"
+            android:title="@string/shopping" />
+        <item
+            android:id="@+id/nav_history"
+            android:title="@string/history" />
+    </group>
+</menu>
