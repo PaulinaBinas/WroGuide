@@ -13,7 +13,6 @@ import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.ColorInt;
-import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
@@ -28,8 +27,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 import android.location.LocationListener;
 
@@ -128,13 +125,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         if (requestCode == 1) {
             if(resultCode == Activity.RESULT_OK){
-                //String result=data.getStringExtra("result");
                 drawRoute(lastClickedMarker.getPosition());
                 Intent i = new Intent(getApplicationContext(), CurrentRouteActivityWindow.class);
                 Bundle bundle = new Bundle();
 
                 bundle.putDouble("distance", distance);
                 bundle.putDouble("time", time);
+                bundle.putString("title", lastClickedMarker.getTitle());
 
                 i.putExtras(bundle);
                 startActivityForResult(i, 11);
@@ -527,7 +524,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 distance = distance(marker.getPosition().latitude,
                         marker.getPosition().longitude, mLastKnownLocation.getLatitude(),
                         mLastKnownLocation.getLongitude());
-                time = 1.4 * distance;
+                time = 1.2 * distance;
 
                 mMap.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
 

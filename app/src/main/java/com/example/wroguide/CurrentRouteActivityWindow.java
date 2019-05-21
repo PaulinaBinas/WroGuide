@@ -15,8 +15,10 @@ public class CurrentRouteActivityWindow extends Activity {
     Button btn_close_route;
     TextView text_view_distance;
     TextView text_view_time;
+    TextView text_view_title;
     String distance;
     String time;
+    String title;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,13 +34,16 @@ public class CurrentRouteActivityWindow extends Activity {
         setContentView(R.layout.activity_current_route_window);
         text_view_distance = findViewById(R.id.distanceOfRoute);
         text_view_time = findViewById(R.id.timeOfRoute);
+        text_view_title = findViewById(R.id.routeTitle);
 
         Bundle bundle = getIntent().getExtras();
         distance = String.format("%.2f", bundle.getDouble("distance") / 1000) + " km";
         time = String.format("%.2f", bundle.getDouble("time") / 60) + " min";
+        title = bundle.getString("title");
 
         text_view_distance.setText(distance);
         text_view_time.setText(time);
+        text_view_title.setText(title);
 
         btn_close_route = (Button) findViewById(R.id.btn_close_route);
         btn_close_route.setOnClickListener(new View.OnClickListener() {
@@ -57,7 +62,7 @@ public class CurrentRouteActivityWindow extends Activity {
         int width = dm.widthPixels;
         int height = dm.heightPixels;
 
-        getWindow().setLayout(width, (int)(height*0.3));
+        getWindow().setLayout(width, (int)(height*0.4));
 
         WindowManager.LayoutParams params = getWindow().getAttributes();
         params.gravity = Gravity.BOTTOM;
