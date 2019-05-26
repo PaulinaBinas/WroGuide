@@ -1,12 +1,17 @@
 package com.paulinabinas.myapplication;
 
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.location.LocationListener;
 import android.os.Bundle;
 import android.support.annotation.ColorInt;
+import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.view.GravityCompat;
@@ -14,9 +19,12 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -26,6 +34,8 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -36,6 +46,8 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -45,6 +57,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private ArrayList<Location> listOfLocationMarkers = new ArrayList<Location>();
     private Map<Marker, String> allMarkersMap = new HashMap<Marker, String>();
     private Marker userLocationMarker;
+    private boolean mLocationPermissionGranted;
+    private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
+    private android.location.Location mLastKnownLocation;
+    private FusedLocationProviderClient mFusedLocationProviderClient;
+    private LatLng wroclawMainSquare = new LatLng(51.1098994, 17.0321699);
+    private MarkerOptions userLocationMarkerOptions;
+    private static final String TAG = "MainActivity";
+    private Timer t;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +74,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference myRef = database.getReference("category");
+
+        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
@@ -69,6 +91,18 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         actionbar.setDisplayHomeAsUpEnabled(true);
         actionbar.setHomeAsUpIndicator(R.drawable.ic_menu);
         actionbar.setTitle("WroGuide");
+
+        t = new Timer();
+        t.scheduleAtFixedRate(new TimerTask(){
+            @Override
+            public void run(){
+                MapsActivity.this.runOnUiThread(new Runnable() {
+                    public void run() {
+                        changeLocationIcon();
+                    }
+                });
+            }
+        },0,500);
 
         drawerLayout = findViewById(R.id.drawer_layout);
         NavigationView navigation = (NavigationView) findViewById(R.id.nav_view);
@@ -241,7 +275,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
 
-        //userLocationMarker = mMap.addMarker(userLocationMarkerOptions);
+        userLocationMarker = mMap.addMarker(userLocationMarkerOptions);
     }
 
     private void drawAllMarkers(ArrayList<Location> locations, ArrayList<Location> markers) {
@@ -259,10 +293,162 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             allMarkersMap.put(tempMarker, l.getId());
             markers.add(l);
         }
-        //userLocationMarker = mMap.addMarker(userLocationMarkerOptions);
+
+        userLocationMarker = mMap.addMarker(userLocationMarkerOptions);
     }
 
+    private void updateLocationUI() {
+        if (mMap == null) {
+            return;
+        }
+        try {
+            if (mLocationPermissionGranted) {
+                mMap.setMyLocationEnabled(true);
+                mMap.getUiSettings().setZoomControlsEnabled(true);
+                mMap.getUiSettings().setZoomGesturesEnabled(true);
+            } else {
+                mMap.setMyLocationEnabled(false);
+                mMap.getUiSettings().setZoomGesturesEnabled(false);
+                mLastKnownLocation = null;
+                getLocationPermission();
+            }
+            mMap.setMyLocationEnabled(false);
+            mMap.getUiSettings().setMyLocationButtonEnabled(false);
+        } catch (SecurityException e)  {
+            Log.e("Exception: %s", e.getMessage());
+        }
+    }
 
+    private void getLocationPermission() {
+        /*
+         * Request location permission, so that we can get the location of the
+         * device. The result of the permission request is handled by a callback,
+         * onRequestPermissionsResult.
+         */
+        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            mLocationPermissionGranted = true;
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+        }
+    }
+
+    private void getDeviceLocation() {
+        /*
+         * Get the best and most recent location of the device, which may be null in rare
+         * cases when a location is not available.
+         */
+        try {
+            if (mLocationPermissionGranted) {
+                Task locationResult = mFusedLocationProviderClient.getLastLocation();
+                locationResult.addOnCompleteListener(this, new OnCompleteListener() {
+                    @Override
+                    public void onComplete(@NonNull Task task) {
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(wroclawMainSquare, 15));
+
+                        if (task.isSuccessful()) {
+                            mLastKnownLocation = (android.location.Location) task.getResult();
+                            LatLng loc = new LatLng(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
+                            Bitmap icon = getBitmap(R.drawable.dark_marker);
+                            userLocationMarkerOptions = new MarkerOptions()
+                                    .zIndex(1)
+                                    .position(loc)
+                                    .icon(BitmapDescriptorFactory.fromBitmap(icon));
+                            userLocationMarker = mMap.addMarker(userLocationMarkerOptions);
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
+                                    new LatLng(mLastKnownLocation.getLatitude(),
+                                            mLastKnownLocation.getLongitude()), 15));
+                        } else {
+                            Log.d(TAG, "Current location is null. Using defaults.");
+                            Log.e(TAG, "Exception: %s", task.getException());
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(wroclawMainSquare, 15));
+                            mMap.getUiSettings().setMyLocationButtonEnabled(false);
+                        }
+                    }
+                });
+            }
+        } catch(SecurityException e)  {
+            Log.e("Exception: %s", e.getMessage());
+        }
+
+    }
+
+    private Bitmap getBitmap(int drawableRes) {
+        Drawable drawable = getResources().getDrawable(drawableRes);
+        Canvas canvas = new Canvas();
+        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        canvas.setBitmap(bitmap);
+        drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+        drawable.draw(canvas);
+        return bitmap;
+    }
+
+    private void changeLocationIcon() {
+        if(userLocationMarker != null) {
+            if(userLocationMarker.getAlpha() == 0.5f) {
+                userLocationMarker.setAlpha(1.0f);
+            } else {
+                userLocationMarker.setAlpha(0.5f);
+            }
+        }
+    }
+
+    LocationListener locationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(android.location.Location location) {
+
+            final LatLng currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
+            mLastKnownLocation = location;
+            Bitmap icon = getBitmap(R.drawable.dark_marker);
+            userLocationMarkerOptions = new MarkerOptions()
+                    .zIndex(1)
+                    .position(currentLocation)
+                    .icon(BitmapDescriptorFactory.fromBitmap(icon));
+            if(userLocationMarker != null) {
+                userLocationMarker.setPosition(currentLocation);
+            } else {
+                userLocationMarker = mMap.addMarker(new MarkerOptions()
+                        .zIndex(1)
+                        .position(currentLocation)
+                        .icon(BitmapDescriptorFactory.fromBitmap(icon)));
+            }
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+    };
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[],
+                                           @NonNull int[] grantResults) {
+        mLocationPermissionGranted = false;
+        switch (requestCode) {
+            case PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    mLocationPermissionGranted = true;
+                }
+            }
+        }
+        updateLocationUI();
+    }
 
     /**
      * Manipulates the map once available.
@@ -276,6 +462,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        getLocationPermission();
+        updateLocationUI();
+        getDeviceLocation();
 
         // Add a marker in Wroclaw and move the camera
         LatLng wroclaw = new LatLng(51.110061, 17.033676);
