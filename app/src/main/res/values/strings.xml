@@ -7,4 +7,10 @@
     <string name="shopping">Shopping</string>
     <string name="history">Historical Objects</string>
     <string name="all">All Locations</string>
+    <string name="title">Title</string>
+    <string name="snippet">Snippet</string>
+    <string name="close">Close</string>
+    <string name="directions">Directions</string>
+    <string name="distance">Distance of route: </string>
+    <string name="time">Time to cover route: </string>
 </resources>

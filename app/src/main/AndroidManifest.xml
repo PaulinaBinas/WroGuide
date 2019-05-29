@@ -29,6 +29,8 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
+
+
         <activity
             android:name=".MapsActivity"
             android:label="@string/title_activity_maps">
@@ -38,6 +40,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".MarkerInfoActivityWindow"
+            android:theme="@style/AppTheme.PopUp1" />
+        <activity android:name=".CurrentRouteActivityWindow"
+            android:theme="@style/AppTheme.PopUp2" />
+
     </application>
 
 </manifest>

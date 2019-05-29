@@ -16,4 +16,12 @@
         <item name="titleTextColor">@color/white</item>
     </style>
 
+    <style name="AppTheme.PopUp1">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowCloseOnTouchOutside">true</item>
+    </style>
+    <style name="AppTheme.PopUp2">
+        <item name="android:windowIsTranslucent">true</item>s
+    </style>
+
 </resources>
