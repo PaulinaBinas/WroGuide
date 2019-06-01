@@ -1,6 +1,7 @@
 package com.paulinabinas.myapplication;
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -20,6 +21,7 @@ import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -86,6 +88,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     ArrayList oldPoints;
     private Polyline route;
 
+    private double distance;
+
+    private double time;
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -97,6 +102,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 Intent i = new Intent(getApplicationContext(), CurrentRouteActivityWindow.class);
                 Bundle bundle = new Bundle();
 
+                bundle.putDouble("distance", distance);
+                bundle.putDouble("time", time);
+                bundle.putString("title", lastClickedMarker.getTitle());
 
                 i.putExtras(bundle);
                 startActivityForResult(i, 11);
@@ -465,6 +473,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         .position(currentLocation)
                         .icon(BitmapDescriptorFactory.fromBitmap(icon)));
             }
+
+            if (!listOfLocationMarkers.isEmpty()) {
+                checkCloseLocations(location.getLatitude(), location.getLongitude(), listOfLocationMarkers);
+            }
+
+            if(route != null) {
+                route.remove();
+                drawRoute(lastClickedMarker.getPosition());
+            }
         }
 
         @Override
@@ -529,6 +546,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 String id = allMarkersMap.get(marker);
                 String title = marker.getTitle();
                 String snippet = marker.getSnippet();
+                distance = distance(marker.getPosition().latitude,
+                        marker.getPosition().longitude, mLastKnownLocation.getLatitude(),
+                        mLastKnownLocation.getLongitude());
+                time = 0.8 * distance;
 
                 mMap.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
 
@@ -707,6 +728,66 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
         }
+    }
+
+    private static double distance(double lat1, double lon1, double lat2, double lon2) {
+        if ((lat1 == lat2) && (lon1 == lon2)) {
+            return 0;
+        }
+        else {
+            double theta = lon1 - lon2;
+            double dist = Math.sin(Math.toRadians(lat1)) * Math.sin(Math.toRadians(lat2)) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.cos(Math.toRadians(theta));
+            dist = Math.acos(dist);
+            dist = Math.toDegrees(dist);
+            dist = dist * 60 * 1.1515 * 1609.344;
+            return (dist);
+        }
+    }
+
+    private void checkCloseLocations(double currentLatitude, double currentLongitude, ArrayList<Location> markers) {
+
+        Double smallestDistance = Double.MAX_VALUE;
+        int index = 0;
+        int smallestIndex = 0;
+        for (Location m : markers) {
+            Double tempDistance1 = distance(currentLatitude, currentLongitude, m.getLatitude(), m.getLongitude());
+
+            if (smallestDistance > tempDistance1) {
+
+                smallestDistance = tempDistance1;
+                smallestIndex = index;
+            }
+
+            index++;
+        }
+        if (smallestDistance < 20) {
+            showAlert(currentLatitude, currentLongitude, markers.get(smallestIndex), markers);
+            if(route != null && lastClickedMarker.equals(markers.get(smallestIndex))) {
+                route.remove();
+                route = null;
+            }
+        }
+    }
+
+    private void showAlert(double currentLatitude, double currentLongitude, final Location location, final ArrayList<Location> markers) {
+
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
+        alertBuilder.setTitle("Close Location:");
+        alertBuilder.setMessage(location.getName());
+        alertBuilder.setCancelable(true);
+
+        alertBuilder.setPositiveButton(
+                "OK",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        markers.remove(location);
+                        dialog.cancel();
+                    }
+                });
+
+
+        AlertDialog alert = alertBuilder.create();
+        alert.show();
     }
 
 }
